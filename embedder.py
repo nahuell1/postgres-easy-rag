@@ -23,31 +23,28 @@ from llama_index import (
 from llama_index.vector_stores import PGVectorStore
 
 
-from main import PostgresConnection
-
 load_dotenv()
 
 
-query = f"""
+QUERY = f"""
 SELECT e.campo, CONCAT('CODIGO', e.id) FROM tabla e;
 """
 
 
-def fetch_documents_from_storage(query: str):
+def fetch_documents_from_storage(query: str, connection):
     # Prep documents - fetch from DB
     DatabaseReader = download_loader("DatabaseReader")
     reader = DatabaseReader(
-        scheme=os.environ.get("db_scheme"),  # Database Scheme
-        dbname=os.environ.get("db_name"),  # Database Name
-        user=os.environ.get("db_user"),  # Database User
-        password=os.environ.get("db_password"),  # Database Password
-        host=os.environ.get("db_host"),  # Database Host
-        port=os.environ.get("db_port"),  # Database Port
+        scheme=connection.scheme,  # Database Scheme
+        dbname=connection.dbname,  # Database Name
+        user=connection.user,  # Database User
+        password=connection.password,  # Database Password
+        host=connection.host,  # Database Host
+        port=connection.port,  # Database Port
     )
     return reader.load_data(query=query)
 
 
-documents = fetch_documents_from_storage(query=query)
 
 # You would cache this
 EMBED_MODEL = HuggingFaceEmbedding(
@@ -55,34 +52,6 @@ EMBED_MODEL = HuggingFaceEmbedding(
     embed_batch_size=10,  # open-source embedding model
 )
 
-# query = """
-# UPDATE tabla
-# SET embedding = '{}'
-# WHERE id = '{}';
-# """
-
-
-# def save_embeddings(documents, query) -> None:
-#     for document in documents:
-#         text = document.text.split("$$$", 1)[0][:-2]
-#         uuid = document.text.split("$$$", 1)[1]
-#         # print(f"{uuid}: {text}")
-#         embedding = EMBED_MODEL.get_text_embedding(text)
-#         query = query.format(embedding, uuid)
-#         # Conectar con la db y ejecutar la query
-#         conn = psycopg2.connect(
-#             dbname=os.environ.get("db_name"),
-#             user=os.environ.get("db_user"),
-#             password=os.environ.get("db_password"),
-#             host=os.environ.get("db_host"),
-#             port=os.environ.get("db_port"),
-#         )
-#         cursor = conn.cursor()
-#         cursor.execute(query)
-#         conn.commit()
-
-
-# save_embeddings(documents, query)  # documents loaded previously
 
 llm = Ollama(
     base_url="localhost:11434",  # Download the GGUF from hugging face
@@ -130,7 +99,7 @@ def _vector_store(connection):
 
 def generate_index(connection):
     _generate_vector_store_index(
-        documents=documents,
+        documents=fetch_documents_from_storage(QUERY, connection),
         service_context=service_context,
         vector_store=_vector_store(connection),
     )
