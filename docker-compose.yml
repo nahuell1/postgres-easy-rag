@@ -1,0 +1,14 @@
+networks:
+  embedding:
+    name: "embedding"
+    external: true
+
+services:
+  app:
+    build:
+      context: .
+      target: base
+    networks:
+      - embedding
+    volumes:
+      - ./:/app
