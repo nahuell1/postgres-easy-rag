@@ -1,0 +1,1 @@
+Proyecto para implementar fácilmente un RAG para una base de datos ya poblada anteriormente. Aún no está terminado, pero la idea es que se pueda lanzar como un servicio tipo "plug and play" sin que interfiera con ningún otro servicio, con conectividad únicamente a través de consultas con la base de datos, utilizando una api para las consultas y respuestas.
